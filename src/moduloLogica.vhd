@@ -60,6 +60,7 @@ ARCHITECTURE behavioral OF moduloLogica IS
 	
 	-- Tick de refresco
 	SIGNAL refr_tick : std_logic;
+	SIGNAL prev_refr_tick : std_logic := '0';
 	
 BEGIN
 	
@@ -79,11 +80,13 @@ BEGIN
          ball_vy <= ball_v;
          score_p1 <= '0';
          score_p2 <= '0';	
+			prev_refr_tick <= '0';
 		ELSIF rising_edge(clk_50Mhz) THEN	
 			score_p1 <= '0'; -- Por defecto en 0, solo se disparan un instante
          score_p2 <= '0';
+			prev_refr_tick <= refr_tick;
             
-         IF refr_tick = '1' THEN
+         IF refr_tick = '1' AND prev_refr_tick = '0' THEN
 				-- Control Paleta 1 (Limita que no salga de la pantalla)
             IF p1_up = '1' AND p1_y > 0 THEN
 					p1_y <= p1_y - pad_v;
@@ -101,8 +104,12 @@ BEGIN
             -- Movimiento Pelota (Eje Y: Rebote con techo y piso)
             IF ball_y <= 0 THEN
 					ball_vy <= ball_v; -- Invierte hacia abajo
+					ball_y <= ball_v;
+					
             ELSIF ball_y >= (max_y - ball_s) THEN
                ball_vy <= -ball_v; -- Invierte hacia arriba
+					ball_y <= max_y - ball_s - ball_v;
+					
             ELSE
                ball_y <= ball_y + ball_vy;
             END IF;
@@ -112,11 +119,13 @@ BEGIN
             IF (ball_x <= p1_x + pad_w) AND (ball_x + ball_s >= p1_x) AND
                (ball_y + ball_s >= p1_y) AND (ball_y <= p1_y + pad_h) THEN
 					ball_vx <= ball_v; -- Rebota hacia la derecha
+					ball_x <= p1_x + pad_w + ball_v;
                     
             -- Colision Paleta 2
             ELSIF (ball_x + ball_s >= p2_x) AND (ball_x <= p2_x + pad_w) AND
                   (ball_y + ball_s >= p2_y) AND (ball_y <= p2_y + pad_h) THEN
 					ball_vx <= -ball_v; -- Rebota hacia la izquierda
+					ball_x <= p2_x - ball_s - ball_v;
                     
             -- Salio por la izquierda (Punto para Jugador 2)
             ELSIF ball_x <= 0 THEN
